@@ -21,4 +21,4 @@ Look into main.um for more examples.
 - [ ] Dynarray
 - [ ] Builtin
 - [ ] Pointer
-- [ ] Closures
+- [x] Closures

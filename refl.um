@@ -3,6 +3,7 @@ type TypeKind = enum {
     other
     enumtype
     structtype
+    closuretype
 }
 
 type Formatter* = struct {
@@ -35,6 +36,7 @@ type Invalid* = struct { t: ^void }
 type Other*   = struct { t: ^void }
 type Enum*    = struct { t: ^void }
 type Struct*  = struct { t: ^void }
+type Closure* = struct { t: ^void }
 
 fn (f: ^Formatter) write(s: str) {
     for i, c in s {
@@ -57,9 +59,10 @@ fn (f: ^Formatter) write(s: str) {
 fn reflGetTypeName(t: ^void): str
 
 fn (t: ^Invalid) name*(): str { return "invalid" }
+fn (t: ^Other) name*(): str { return reflGetTypeName(t.t) }
 fn (t: ^Enum) name*(): str { return reflGetTypeName(t.t) }
 fn (t: ^Struct) name*(): str { return reflGetTypeName(t.t) }
-fn (t: ^Other) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Closure) name*(): str { return reflGetTypeName(t.t) }
 
 fn reflGetEnumVariantName(t: ^void, i: int): str
 
@@ -78,6 +81,25 @@ fn reflGetStructFields(t: ^void, evt: ^void): []FieldInternal
 fn mk*(t: ^void): (Type, bool)
 fn (t: ^Struct) fields*(): []Field {
     rawfields := reflGetStructFields(t.t, typeptr([]FieldInternal))
+    fields := make([]Field, len(rawfields))
+
+    for i, field in rawfields {
+        fields[i] = Field{field.name, mk(field.typ).item0}
+    }
+
+    return fields
+}
+
+fn reflGetClosureReturn(t: ^void): ^void
+
+fn (t: ^Closure) returnType*(): Type {
+    return mk(reflGetClosureReturn(t.t)).item0
+}
+
+fn reflGetClosureParams(t: ^void, evt: ^void): []FieldInternal
+
+fn (t: ^Closure) params*(): []Field {
+    rawfields := reflGetClosureParams(t.t, typeptr([]FieldInternal))
     fields := make([]Field, len(rawfields))
 
     for i, field in rawfields {
@@ -112,13 +134,27 @@ fn (t: ^Struct) fmt*(f: ^Formatter) {
     f.write("}")
 }
 
+fn (t: ^Closure) fmt*(f: ^Formatter) {
+    f.write("fn (")
+    for i, param in t.params() {
+        f.write(sprintf("%s: ", param.name))
+        param.typ.fmt(f)
+        if i < len(t.params())-1 {
+            f.write(", ")
+        }
+    }
+    f.write("): ")
+    t.returnType().fmt(f)
+}
+
 fn reflGetTypeKind(t: ^void): TypeKind
 
 fn mk*(t: ^void): (Type, bool) {
     switch reflGetTypeKind(t) {
-        case .other:    return Other{t}, true
-        case .enumtype: return Enum{t}, true
-        case .structtype:   return Struct{t}, true
+        case .other:       return Other{t}, true
+        case .enumtype:    return Enum{t}, true
+        case .structtype:  return Struct{t}, true
+        case .closuretype: return Closure{t}, true
     }
 
     return Invalid{t}, false

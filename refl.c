@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-enum ReflTypeKind { RTK_INVALID, RTK_OTHER, RTK_ENUM, RTK_STRUCT };
+enum ReflTypeKind { RTK_INVALID, RTK_OTHER, RTK_ENUM, RTK_STRUCT, RTK_CLOSURE };
 
 static const char *spelling[] = {
     "none",   "forward", "void",      "null",    "int8",  "int16", "int32",
@@ -27,6 +27,8 @@ enum ReflTypeKind getTypeKind(Type *type) {
     return RTK_ENUM;
   } else if (type->kind == TYPE_STRUCT) {
     return RTK_STRUCT;
+  } else if (type->kind == TYPE_FN || type->kind == TYPE_CLOSURE) {
+    return RTK_CLOSURE;
   } else {
     return RTK_OTHER;
   }
@@ -109,15 +111,52 @@ typedef struct {
 
 FN(reflGetStructFields, {
   Type *type = ARG(0)->ptrVal;
-  Type *enumvarianttype = ARG(1)->ptrVal;
+  Type *structfieldtype = ARG(1)->ptrVal;
   assert(type->kind == TYPE_STRUCT);
 
   UmkaDynArray(StructField) *result = RET()->ptrVal;
 
-  api->umkaMakeDynArray(umka, result, enumvarianttype, type->numItems);
+  api->umkaMakeDynArray(umka, result, structfieldtype, type->numItems);
 
   for (int i = 0; i < type->numItems; i++) {
     result->data[i].name = api->umkaMakeStr(umka, type->field[i]->name);
     result->data[i].type = type->field[i]->type;
+  }
+})
+
+FN(reflGetClosureReturn, {
+  Type *type = ARG(0)->ptrVal;
+  assert(type->kind == TYPE_FN || type->kind == TYPE_CLOSURE);
+
+  if (type->kind == TYPE_CLOSURE) {
+    RET()->ptrVal = type->field[0]->type->sig.resultType;
+  } else {
+    RET()->ptrVal = type->sig.resultType;
+  }
+})
+
+FN(reflGetClosureParams, {
+  Type *type = ARG(0)->ptrVal;
+  Type *structfieldtype = ARG(1)->ptrVal;
+  assert(type->kind == TYPE_FN || type->kind == TYPE_CLOSURE);
+
+  UmkaDynArray(StructField) *result = RET()->ptrVal;
+
+  if (type->kind == TYPE_CLOSURE) {
+    api->umkaMakeDynArray(umka, result, structfieldtype,
+                          type->field[0]->type->sig.numParams - 1);
+
+    for (int i = 1; i < type->field[0]->type->sig.numParams; i++) {
+      result->data[i - 1].name =
+          api->umkaMakeStr(umka, type->field[0]->type->sig.param[i]->name);
+      result->data[i - 1].type = type->field[0]->type->sig.param[i]->type;
+    }
+  } else {
+    api->umkaMakeDynArray(umka, result, structfieldtype, type->sig.numParams);
+
+    for (int i = 0; i < type->sig.numParams; i++) {
+      result->data[i].name = api->umkaMakeStr(umka, type->sig.param[i]->name);
+      result->data[i].type = type->sig.param[i]->type;
+    }
   }
 })
