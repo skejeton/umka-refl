@@ -4,8 +4,6 @@ An Umka type reflection library, without any modifications to Umka itself.
 
 ![Demonstration formatting a type "Player"](./demo.png)
 
-Look into main.um for more examples.
-
 # Building
 
 `./build.bat` on Windows (requires MSVC installed).
@@ -15,10 +13,18 @@ Look into main.um for more examples.
 
 - [x] Enums
 - [x] Structs
-- [ ] Interface
-- [ ] Map
-- [ ] Array
-- [ ] Dynarray
-- [ ] Builtin
-- [ ] Pointer
-- [x] Closures
+- [x] Interface
+- [x] Map
+- [x] Array
+- [x] Dynarray
+- [x] Builtin
+- [x] Pointer
+- [x] Closures/Functions/Methods
+- [x] Type location (file, line)
+- [x] Type size
+- [x] Type alignment
+- [x] Struct field offset
+- [ ] Getting methods of a type
+- [ ] Interface compatibilty
+- [ ] Explicit cast compatibility
+- [ ] Implicit cast compatibility

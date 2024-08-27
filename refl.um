@@ -1,42 +1,243 @@
-type TypeKind = enum {
-    invalid
-    other
-    enumtype
-    structtype
-    closuretype
+type (
+    TypeKind = enum {
+        invalid
+        builtin
+        enumtype
+        structtype
+        closuretype
+        interfacetype
+        pointertype
+        arraytype
+        dynarraytype
+        maptype
+    }
+
+    Formatter* = struct {
+        s:       str
+        nesting: int
+        indent:  bool
+        visited: map[^void]bool
+    }
+
+    Location* = struct {
+        file: str
+        line: int
+    }
+
+    Type* = interface {
+        name(): str
+        typeptr(): ^void
+        location(): Location
+        size(): uint
+        alignment(): uint
+        fmt(f: ^Formatter)
+    }
+
+    EnumVariant* = struct {
+        name: str
+        val:  int
+    }
+
+    FieldInternal = struct {
+        name: str
+        typ:  ^void
+    }
+
+    Field* = struct {
+        name: str
+        typ:  Type
+    }
+
+    Invalid*   = struct { t: ^void }
+    Builtin*   = struct { t: ^void }
+    Enum*      = struct { t: ^void }
+    Struct*    = struct { t: ^void }
+    Closure*   = struct { t: ^void }
+    Interface* = struct { t: ^void }
+    Pointer*   = struct { t: ^void }
+    Array*     = struct { t: ^void }
+    Dynarray*  = struct { t: ^void }
+    Map*       = struct { t: ^void }
+)
+
+fn mk*(t: ^void): (Type, bool)
+fn formatType*(t: Type): str
+
+fn (t: ^Enum) variantName*(i: int): str
+fn (t: ^Enum) variants*(): []EnumVariant
+fn (t: ^Struct) fields*(): []Field
+fn (t: ^Struct) fieldOffset*(field: str): int
+fn (t: ^Closure) returnType*(): Type
+fn (t: ^Closure) params*(): []Field
+fn (t: ^Closure) isMethod*(): bool
+fn (t: ^Closure) hasUpvalues*(): bool
+fn (t: ^Interface) methods*(): []Field
+fn (t: ^Pointer) underlying*(): Type
+fn (t: ^Pointer) isWeak*(): bool
+fn (t: ^Array) underlying*(): Type
+fn (t: ^Array) length*(): uint
+fn (t: ^Dynarray) underlying*(): Type
+fn (t: ^Map) key*(): Type
+fn (t: ^Map) value*(): Type
+
+fn reflGetTypeName(t: ^void): str
+fn reflGetTypeLocation(t: ^void): Location
+fn reflGetTypeSize(t: ^void): uint
+fn reflGetTypeAlignment(t: ^void): uint
+fn reflGetEnumVariantName(t: ^void, i: int): str
+fn reflGetEnumVariants(t: ^void, evt: ^void): []EnumVariant
+fn reflGetStructFields(t: ^void, evt: ^void): []FieldInternal
+fn reflGetStructFieldOffset(t: ^void, field: str): int
+fn reflGetClosureReturn(t: ^void): ^void
+fn reflGetClosureParams(t: ^void, evt: ^void): []FieldInternal
+fn reflClosureIsMethod(t: ^void): bool
+fn reflClosureHasUpvalues(t: ^void): bool
+fn reflGetInterfaceMethods(t: ^void, evt: ^void): []FieldInternal
+fn reflGetUnderlyingType(t: ^void): ^void
+fn reflPointerIsWeak(t: ^void): bool
+fn reflGetArraySize(t: ^void): uint
+fn reflGetMapKeyType(t: ^void): ^void
+fn reflGetTypeKind(t: ^void): TypeKind
+
+fn (t: ^Invalid) name*(): str { return "invalid" }
+fn (t: ^Builtin) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Enum) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Struct) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Closure) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Interface) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Pointer) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Array) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Dynarray) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Map) name*(): str { return reflGetTypeName(t.t) }
+
+fn (t: ^Invalid) location*(): Location { return {file: "?"} }
+fn (t: ^Builtin) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Enum) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Struct) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Closure) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Interface) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Pointer) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Array) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Dynarray) location*(): Location { return reflGetTypeLocation(t.t) }
+fn (t: ^Map) location*(): Location { return reflGetTypeLocation(t.t) }
+
+fn (t: ^Invalid) size*(): uint { return 0 }
+fn (t: ^Builtin) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Enum) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Struct) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Closure) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Interface) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Pointer) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Array) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Dynarray) size*(): uint { return reflGetTypeSize(t.t) }
+fn (t: ^Map) size*(): uint { return reflGetTypeSize(t.t) }
+
+fn (t: ^Invalid) alignment*(): uint { return 0 }
+fn (t: ^Builtin) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Enum) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Struct) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Closure) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Interface) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Pointer) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Array) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Dynarray) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+fn (t: ^Map) alignment*(): uint { return reflGetTypeAlignment(t.t) }
+
+fn (t: ^Invalid) typeptr*(): ^void { return t.t }
+fn (t: ^Builtin) typeptr*(): ^void { return t.t }
+fn (t: ^Enum) typeptr*(): ^void { return t.t }
+fn (t: ^Struct) typeptr*(): ^void { return t.t }
+fn (t: ^Closure) typeptr*(): ^void { return t.t }
+fn (t: ^Interface) typeptr*(): ^void { return t.t }
+fn (t: ^Pointer) typeptr*(): ^void { return t.t }
+fn (t: ^Array) typeptr*(): ^void { return t.t }
+fn (t: ^Dynarray) typeptr*(): ^void { return t.t }
+fn (t: ^Map) typeptr*(): ^void { return t.t }
+
+fn (t: ^Enum) variantName*(i: int): str {
+    return reflGetEnumVariantName(t.t, i)
 }
 
-type Formatter* = struct {
-    s:       str
-    nesting: int
-    indent:  bool
+fn (t: ^Enum) variants*(): []EnumVariant {
+    return reflGetEnumVariants(t.t, typeptr([]EnumVariant))
 }
 
-type Type* = interface {
-    name(): str
-    fmt(f: ^Formatter)
+fn (t: ^Struct) fields*(): []Field {
+    rawfields := reflGetStructFields(t.t, typeptr([]FieldInternal))
+    fields := make([]Field, len(rawfields))
+
+    for i, field in rawfields {
+        fields[i] = Field{field.name, mk(field.typ).item0}
+    }
+
+    return fields
 }
 
-type EnumVariant* = struct {
-    name: str
-    val:  int
+fn (t: ^Struct) fieldOffset*(field: str): int {
+    return reflGetStructFieldOffset(t.t, field)
 }
 
-type FieldInternal = struct {
-    name: str
-    typ:  ^void
+fn (t: ^Closure) returnType*(): Type {
+    return mk(reflGetClosureReturn(t.t)).item0
 }
 
-type Field* = struct {
-    name: str
-    typ:  Type
+fn (t: ^Closure) params*(): []Field {
+    rawfields := reflGetClosureParams(t.t, typeptr([]FieldInternal))
+    fields := make([]Field, len(rawfields))
+
+    for i, field in rawfields {
+        fields[i] = Field{field.name, mk(field.typ).item0}
+    }
+
+    return fields
 }
 
-type Invalid* = struct { t: ^void }
-type Other*   = struct { t: ^void }
-type Enum*    = struct { t: ^void }
-type Struct*  = struct { t: ^void }
-type Closure* = struct { t: ^void }
+fn (t: ^Closure) isMethod*(): bool {
+    return reflClosureIsMethod(t.t)
+}
+
+fn (t: ^Closure) hasUpvalues*(): bool {
+    return reflClosureHasUpvalues(t.t)
+}
+
+fn (t: ^Interface) methods*(): []Field {
+    rawfields := reflGetInterfaceMethods(t.t, typeptr([]FieldInternal))
+    fields := make([]Field, len(rawfields))
+
+    for i, field in rawfields {
+        fields[i] = Field{field.name, mk(field.typ).item0}
+    }
+
+    return fields
+}
+
+fn (t: ^Pointer) underlying*(): Type {
+    return mk(reflGetUnderlyingType(t.t)).item0
+}
+
+fn (t: ^Pointer) isWeak*(): bool {
+    return reflPointerIsWeak(t.t)
+}
+
+fn (t: ^Array) underlying*(): Type {
+    return mk(reflGetUnderlyingType(t.t)).item0
+}
+
+fn (t: ^Array) length*(): uint {
+    return reflGetArraySize(t.t)
+}
+
+fn (t: ^Dynarray) underlying*(): Type {
+    return mk(reflGetUnderlyingType(t.t)).item0
+}
+
+fn (t: ^Map) key*(): Type {
+    return mk(reflGetMapKeyType(t.t)).item0
+}
+
+fn (t: ^Map) value*(): Type {
+    return mk(reflGetUnderlyingType(t.t)).item0
+}
 
 fn (f: ^Formatter) write(s: str) {
     for i, c in s {
@@ -56,66 +257,28 @@ fn (f: ^Formatter) write(s: str) {
     }
 }
 
-fn reflGetTypeName(t: ^void): str
-
-fn (t: ^Invalid) name*(): str { return "invalid" }
-fn (t: ^Other) name*(): str { return reflGetTypeName(t.t) }
-fn (t: ^Enum) name*(): str { return reflGetTypeName(t.t) }
-fn (t: ^Struct) name*(): str { return reflGetTypeName(t.t) }
-fn (t: ^Closure) name*(): str { return reflGetTypeName(t.t) }
-
-fn reflGetEnumVariantName(t: ^void, i: int): str
-
-fn (t: ^Enum) variantName*(i: int): str {
-    return reflGetEnumVariantName(t.t, i)
-}
-
-fn reflGetEnumVariants(t: ^void, evt: ^void): []EnumVariant
-
-fn (t: ^Enum) variants*(): []EnumVariant {
-    return reflGetEnumVariants(t.t, typeptr([]EnumVariant))
-}
-
-fn reflGetStructFields(t: ^void, evt: ^void): []FieldInternal
-
-fn mk*(t: ^void): (Type, bool)
-fn (t: ^Struct) fields*(): []Field {
-    rawfields := reflGetStructFields(t.t, typeptr([]FieldInternal))
-    fields := make([]Field, len(rawfields))
-
-    for i, field in rawfields {
-        fields[i] = Field{field.name, mk(field.typ).item0}
+fn (f: ^Formatter) visit*(t: Type) {
+    if f.visited[t.typeptr()] {
+        f.write(t.name())
+        return
     }
 
-    return fields
-}
-
-fn reflGetClosureReturn(t: ^void): ^void
-
-fn (t: ^Closure) returnType*(): Type {
-    return mk(reflGetClosureReturn(t.t)).item0
-}
-
-fn reflGetClosureParams(t: ^void, evt: ^void): []FieldInternal
-
-fn (t: ^Closure) params*(): []Field {
-    rawfields := reflGetClosureParams(t.t, typeptr([]FieldInternal))
-    fields := make([]Field, len(rawfields))
-
-    for i, field in rawfields {
-        fields[i] = Field{field.name, mk(field.typ).item0}
-    }
-
-    return fields
+    f.visited[t.typeptr()] = true
+    t.fmt(f)
 }
 
 fn (t: ^Invalid) fmt*(f: ^Formatter) { f.write("invalid") }
-fn (t: ^Other) fmt*(f: ^Formatter) { f.write(t.name()) }
+fn (t: ^Builtin) fmt*(f: ^Formatter) { f.write(t.name()) }
 fn (t: ^Enum) fmt*(f: ^Formatter) {
-    f.write("enum "+t.name()+" {\n")
+    f.write("enum "+t.name()+" {")
     f.nesting += 1
+    wrap := false
     for i, variant in t.variants() {
+        wrap = true
+        f.write("\n")
         f.write(sprintf("%s = %d", variant.name, variant.val))
+    }
+    if wrap {
         f.write("\n")
     }
     f.nesting -= 1
@@ -123,11 +286,16 @@ fn (t: ^Enum) fmt*(f: ^Formatter) {
 }
 
 fn (t: ^Struct) fmt*(f: ^Formatter) {
-    f.write("struct "+t.name()+" {\n")
+    f.write("struct "+t.name()+" {")
     f.nesting += 1
+    wrap := false
     for i, field in t.fields() {
+        wrap = true
+        f.write("\n")
         f.write(sprintf("%s: ", field.name))
-        field.typ.fmt(f)
+        f.visit(field.typ)
+    }
+    if wrap {
         f.write("\n")
     }
     f.nesting -= 1
@@ -135,26 +303,83 @@ fn (t: ^Struct) fmt*(f: ^Formatter) {
 }
 
 fn (t: ^Closure) fmt*(f: ^Formatter) {
+    params := t.params()
+
     f.write("fn (")
-    for i, param in t.params() {
+    if t.isMethod() {
+        f.write("self: ")
+        f.visit(params[0].typ)
+        f.write(") (")
+    }
+
+    for i, param in params {
+        if t.isMethod() && i == 0 {
+            continue
+        }
+
         f.write(sprintf("%s: ", param.name))
-        param.typ.fmt(f)
+        f.visit(param.typ)
         if i < len(t.params())-1 {
             f.write(", ")
         }
     }
     f.write("): ")
-    t.returnType().fmt(f)
+    f.visit(t.returnType())
+    if t.hasUpvalues() {
+        f.write(" |..|")
+    }
 }
 
-fn reflGetTypeKind(t: ^void): TypeKind
+fn (t: ^Interface) fmt*(f: ^Formatter) {
+    f.write("interface "+t.name()+" {")
+    f.nesting += 1
+    wrap := false
+    for i, method in t.methods() {
+        wrap = true
+        f.write("\n")
+        f.write(sprintf("%s: ", method.name))
+        f.visit(method.typ)
+    }
+    if wrap {
+        f.write("\n")
+    }
+    f.nesting -= 1
+    f.write("}")
+}
+
+fn (t: ^Pointer) fmt*(f: ^Formatter) {
+    f.write(t.isWeak() ? "weak ^" : "^")
+    f.visit(t.underlying())
+}
+
+fn (t: ^Array) fmt*(f: ^Formatter) {
+    f.write(sprintf("[%d]", t.length()))
+    f.visit(t.underlying())
+}
+
+fn (t: ^Dynarray) fmt*(f: ^Formatter) {
+    f.write("[]")
+    f.visit(t.underlying())
+}
+
+fn (t: ^Map) fmt*(f: ^Formatter) {
+    f.write("map[")
+    f.visit(t.key())
+    f.write("]")
+    f.visit(t.value())
+}
 
 fn mk*(t: ^void): (Type, bool) {
     switch reflGetTypeKind(t) {
-        case .other:       return Other{t}, true
-        case .enumtype:    return Enum{t}, true
-        case .structtype:  return Struct{t}, true
-        case .closuretype: return Closure{t}, true
+        case .builtin:       return Builtin{t}, true
+        case .enumtype:      return Enum{t}, true
+        case .structtype:    return Struct{t}, true
+        case .closuretype:   return Closure{t}, true
+        case .interfacetype: return Interface{t}, true
+        case .pointertype:   return Pointer{t}, true
+        case .arraytype:     return Array{t}, true
+        case .dynarraytype:  return Dynarray{t}, true
+        case .maptype:       return Map{t}, true
     }
 
     return Invalid{t}, false
@@ -162,7 +387,6 @@ fn mk*(t: ^void): (Type, bool) {
 
 fn formatType*(t: Type): str {
     fmt := &Formatter{}
-    t.fmt(fmt)
+    fmt.visit(t)
     return fmt.s
 }
-

@@ -20,10 +20,23 @@ type Rect = struct {
 type Player = struct {
     dir: Direction
     rect: Rect
-    update: fn (t: real)
+    deck: [3]int
+    inventory: []int
+    enemies: map[str]^int
+    nextTarget: ^Player
+    update: fn (t: real, a: ..any)
+}
+
+fn (p: ^Player) move() {
+
 }
 
 fn main() {
     t, ok := refl::mk(typeptr(Player))
-    printf("%s", refl::formatType(t))
+    printf("%s\n", refl::formatType(t))
+    printf("%v\n", t.location())
+    printf("%v\n", t.alignment())
+    printf("%v\n", refl::Struct(t).fieldOffset("deck"))
+    t2, ok := refl::mk(typeptr(refl::Type))
+    printf("%s\n", refl::formatType(t2))
 }
