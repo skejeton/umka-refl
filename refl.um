@@ -1,0 +1,132 @@
+type TypeKind = enum {
+    invalid
+    other
+    enumtype
+    structtype
+}
+
+type Formatter* = struct {
+    s:       str
+    nesting: int
+    indent:  bool
+}
+
+type Type* = interface {
+    name(): str
+    fmt(f: ^Formatter)
+}
+
+type EnumVariant* = struct {
+    name: str
+    val:  int
+}
+
+type FieldInternal = struct {
+    name: str
+    typ:  ^void
+}
+
+type Field* = struct {
+    name: str
+    typ:  Type
+}
+
+type Invalid* = struct { t: ^void }
+type Other*   = struct { t: ^void }
+type Enum*    = struct { t: ^void }
+type Struct*  = struct { t: ^void }
+
+fn (f: ^Formatter) write(s: str) {
+    for i, c in s {
+        if f.indent {
+            f.indent = false
+            for i := 0; i < f.nesting; i++ {
+                f.s += "    "
+            }
+        }
+
+        if c == '\n' {
+            f.s += '\n'
+            f.indent = true
+        } else {
+            f.s += c
+        }
+    }
+}
+
+fn reflGetTypeName(t: ^void): str
+
+fn (t: ^Invalid) name*(): str { return "invalid" }
+fn (t: ^Enum) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Struct) name*(): str { return reflGetTypeName(t.t) }
+fn (t: ^Other) name*(): str { return reflGetTypeName(t.t) }
+
+fn reflGetEnumVariantName(t: ^void, i: int): str
+
+fn (t: ^Enum) variantName*(i: int): str {
+    return reflGetEnumVariantName(t.t, i)
+}
+
+fn reflGetEnumVariants(t: ^void, evt: ^void): []EnumVariant
+
+fn (t: ^Enum) variants*(): []EnumVariant {
+    return reflGetEnumVariants(t.t, typeptr([]EnumVariant))
+}
+
+fn reflGetStructFields(t: ^void, evt: ^void): []FieldInternal
+
+fn mk*(t: ^void): (Type, bool)
+fn (t: ^Struct) fields*(): []Field {
+    rawfields := reflGetStructFields(t.t, typeptr([]FieldInternal))
+    fields := make([]Field, len(rawfields))
+
+    for i, field in rawfields {
+        fields[i] = Field{field.name, mk(field.typ).item0}
+    }
+
+    return fields
+}
+
+fn (t: ^Invalid) fmt*(f: ^Formatter) { f.write("invalid") }
+fn (t: ^Other) fmt*(f: ^Formatter) { f.write(t.name()) }
+fn (t: ^Enum) fmt*(f: ^Formatter) {
+    f.write("enum "+t.name()+" {\n")
+    f.nesting += 1
+    for i, variant in t.variants() {
+        f.write(sprintf("%s = %d", variant.name, variant.val))
+        f.write("\n")
+    }
+    f.nesting -= 1
+    f.write("}")
+}
+
+fn (t: ^Struct) fmt*(f: ^Formatter) {
+    f.write("struct "+t.name()+" {\n")
+    f.nesting += 1
+    for i, field in t.fields() {
+        f.write(sprintf("%s: ", field.name))
+        field.typ.fmt(f)
+        f.write("\n")
+    }
+    f.nesting -= 1
+    f.write("}")
+}
+
+fn reflGetTypeKind(t: ^void): TypeKind
+
+fn mk*(t: ^void): (Type, bool) {
+    switch reflGetTypeKind(t) {
+        case .other:    return Other{t}, true
+        case .enumtype: return Enum{t}, true
+        case .structtype:   return Struct{t}, true
+    }
+
+    return Invalid{t}, false
+}
+
+fn formatType*(t: Type): str {
+    fmt := &Formatter{}
+    t.fmt(fmt)
+    return fmt.s
+}
+

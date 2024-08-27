@@ -1,0 +1,43 @@
+import ("refl.um")
+
+type Direction = enum {
+    up
+    down
+    left
+    right
+}
+
+type Vf2 = struct {
+    x: real
+    y: real
+}
+
+type Rect = struct {
+    pos: Vf2
+    size: Vf2
+}
+
+type Player = struct {
+    dir: Direction
+    rect: Rect
+}
+
+fn main() {
+    t1, ok := refl::mk(typeptr(int))
+    printf("%s\n", t1.name())
+
+    t2, ok := refl::mk(typeptr(Direction))
+    printf("%s\n", refl::Enum(t2).variantName(int(Direction.up)))
+    printf("%s\n", refl::Enum(t2).variantName(int(Direction.down)))
+    printf("%s\n", refl::Enum(t2).variantName(int(123)))
+    printf("%v\n", refl::Enum(t2).variants())
+    
+    t3, ok := refl::mk(typeptr(Vf2))
+    printf("%v\n", t3.name())
+    printf("%v\n", refl::Struct(t3).fields())
+
+    t4, ok := refl::mk(typeptr(Player))
+    fmt := &refl::Formatter{}
+    t4.fmt(fmt)
+    printf("%s", refl::formatType(t4))
+}
